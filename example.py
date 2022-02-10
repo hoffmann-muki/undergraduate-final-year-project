@@ -20,7 +20,7 @@ OUTPUT_DIR = './output/'+str(RUN_ID)+'/'
 
 # x_dim = 8 for latent dimension of 'rbf'
 # x_dim = 2 for latent dimension of 'sm'
-x_dim = 5
+x_dim = 2
 method = 'gpfa'
 param_cov_type = 'rbf'  # type of kernel
 param_Q = 2  # number of mixtures for SM
