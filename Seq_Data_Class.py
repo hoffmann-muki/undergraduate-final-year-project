@@ -9,16 +9,19 @@ import numpy as np
 
 
 class Model_Specs:
-    def __init__(self, data=None, params=None):
+    def __init__(self, bin_width=20, data=None, params=None):
         self.data = data
         self.params = params
-        self.bin_width = 200
+        self.bin_width = bin_width
 
     def get_data(self):
         return self.data
 
+    def get_bin_width(self):
+        return self.bin_width
+
     # Load data from mat file
-    def data_from_mat(self, path_to_mat):
+    def from_mat(self, path_to_mat):
         # By default, data loaded as uint8 which gives errors
         mat_contents = sio.loadmat(path_to_mat, mat_dtype=True)
         data = []
@@ -51,11 +54,16 @@ class Model_Specs:
         y[T-1] = sum(u[(T-1)*self.bin_width:])
         return y
 
-    def data_from_movie(self, filepath):
+    def from_dataset(self, filepath, movie=False, natural_or_gratings=False, shifted=False, stimulus_index=0, shift_index=0, image_index=0):
         mat_contents = sio.loadmat(filepath)
         q = mat_contents['n_neurons'][0][0]
         n_trials = mat_contents['n_trials'][0][0]
-        y = mat_contents['Spikes']       
+        if movie:
+            y = mat_contents['Spikes']
+        elif natural_or_gratings:
+            y = mat_contents['Spikes'][stimulus_index][0]
+        elif shifted:
+            y = mat_contents['Spikes'][shift_index][image_index]      
         highest_across_trials = np.zeros((n_trials,))
         data = []
         # Y = np.zeros((q,T)) i.e. num of neurons by num of timepoints (per trial)
@@ -78,6 +86,8 @@ class Model_Specs:
             trial_id = (j+1)
             T = Y.shape[1]
             X = np.zeros(T)
+            if T == 0:
+                continue
             # Store in data object and append to list
             data.append(Trial_Class(trial_id, T, 0, X, Y))            
         self.data = data
@@ -115,8 +125,6 @@ class Trial_Class:
                % (self.trial_id, self.T, self.seq_id, np.array_repr(self.x), np.array_repr(self.y)))
 
 # This gives the user flexibility to declare parameters, or load them from elsewhere
-
-
 class Param_Class():
     def __init__(self, param_cov_type=None, param_gamma=None,
                  param_eps=None, param_d=None, param_C=None, param_R=None,

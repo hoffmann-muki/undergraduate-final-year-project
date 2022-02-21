@@ -4,8 +4,6 @@ import numpy as np
 import scipy
 
 # Run FA
-
-
 def fastfa(X, zDim):
 
     tol = 1e-8
@@ -14,19 +12,17 @@ def fastfa(X, zDim):
     verbose = False
 
     xDim, N = X.shape
-    cX = np.cov(X, bias=1)
+    cX = np.cov(X, bias=True) + pow(10, -5)*np.eye(xDim)
 
     if np.linalg.matrix_rank(cX) == xDim:
-        scale = np.exp(
-            2*np.sum(np.log(np.diag(np.linalg.cholesky(cX).T)))/xDim)
+        scale = np.exp(2*np.sum(np.log(np.diag(np.linalg.cholesky(cX).T)))/xDim)
     else:
         print('WARNING in fastfa.py: Data matrix is not full rank. SAD')
         r = np.linalg.matrix_rank(cX)
         e = np.sort(np.linalg.eig(cX)[0])[::-1]
         scale = scipy.stats.mstats.gmean(e[:r])
 
-    L = np.sqrt(scale/zDim) * np.random.normal(loc=0.0,
-                                               scale=1.0, size=(xDim, zDim))
+    L = np.sqrt(scale/zDim) * np.random.normal(loc=0.0, scale=1.0, size=(xDim, zDim))
     Ph = np.diag(cX)
     d = np.mean(X, 1)
 
@@ -42,8 +38,7 @@ def fastfa(X, zDim):
         # E-step
         iPh = np.diag(1/Ph)
         iPhL = np.matmul(iPh, L)
-        MM = iPh - np.matmul(np.linalg.lstsq((I + np.matmul(L.T, iPhL)
-                                              ).T, iPhL.T, rcond=None)[0].T, iPhL.T)
+        MM = iPh - np.matmul(np.linalg.lstsq((I + np.matmul(L.T, iPhL)).T, iPhL.T, rcond=None)[0].T, iPhL.T)
         beta = np.matmul(L.T, MM)
 
         cX_beta = np.matmul(cX, beta.T)
@@ -60,7 +55,6 @@ def fastfa(X, zDim):
         LL.append(LLi)
 
         # M-step
-
         L = np.linalg.lstsq(EZZ.T, cX_beta.T, rcond=None)[0].T
         Ph = np.diag(cX) - np.sum(cX_beta * L, 1)
         Ph = np.maximum(Ph, varFloor)

@@ -8,15 +8,7 @@ import timeit
 
 # Run EM
 
-"""def em(current_params, seq, kernSDList):
-    # TODO
-    params = load_params('../em_input.mat')
-
-    # est_params, seq_train_cut, LLcut, iter_time
-    return params, seq, None, None"""
-
-
-def em(current_params, seq, kernSDList, minVarFrac):
+def em(current_params, seq, minVarFrac):
 
     emMaxIters = 500
     tol = 1e-8
@@ -31,7 +23,7 @@ def em(current_params, seq, kernSDList, minVarFrac):
     iterTime = []
 
     # model.stack_attributes('y')
-    ycov = np.cov(np.concatenate([trial.y for trial in seq], 1))
+    ycov = np.cov(np.concatenate([trial.y for trial in seq], 1)) + pow(10, -5)*np.eye(yDim)
     varFloor = minVarFrac * np.diag(ycov)
 
     for i in range(emMaxIters):
@@ -65,10 +57,8 @@ def em(current_params, seq, kernSDList, minVarFrac):
         sum_xall = np.ravel(np.sum(Xsm, 1))
         sum_yall = np.sum(Y, 1)
 
-        term = np.vstack((np.hstack((sum_Pauto, sum_xall.reshape(
-            xDim, 1))), np.hstack((sum_xall.T, np.sum(T)))))
-        Cd = np.linalg.lstsq(term.T, np.hstack(
-            (sum_yxtrans, sum_yall.reshape(yDim, 1))).T, rcond=None)
+        term = np.vstack((np.hstack((sum_Pauto, sum_xall.reshape(xDim, 1))), np.hstack((sum_xall.T, np.sum(T)))))
+        Cd = np.linalg.lstsq(term.T, np.hstack((sum_yxtrans, sum_yall.reshape(yDim, 1))).T, rcond=None)
         Cd = Cd[0].T
 
         current_params.C = Cd[:, :xDim]
@@ -83,13 +73,11 @@ def em(current_params, seq, kernSDList, minVarFrac):
                 (sum_yytrans - 2*yd - term) / np.sum(T)
             # Set minimum private variance
             r = np.maximum(varFloor, r)
-            current_params.R = np.diag(
-                r) * np.identity(current_params.R.shape[0])
+            current_params.R = np.diag(r) * np.identity(current_params.R.shape[0])
         else:
             sum_yytrans = np.matmul(Y, Y.T)
             yd = np.outer(sum_yall, current_params.d)
-            term = np.matmul(
-                (sum_yxtrans - np.outer(current_params.d, sum_xall.T)), current_params.C.T)
+            term = np.matmul((sum_yxtrans - np.outer(current_params.d, sum_xall.T)), current_params.C.T)
             R = np.outer(current_params.d, current_params.d) + \
                 (sum_yytrans - yd - yd.T - term) / np.sum(T)
             current_params.R = (R + R.T) / 2

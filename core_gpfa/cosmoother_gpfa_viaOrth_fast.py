@@ -89,6 +89,4 @@ def cosmoother_gpfa_viaOrth_fast(seq, params, mList):
 
                 ctr = ctr + 1
 
-        print('Cross-validation complete for', j+1, 'of', Tu.size, 'trial lengths\n')
-
     return out_seq

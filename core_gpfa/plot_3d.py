@@ -12,7 +12,7 @@ mpl.rcParams['figure.figsize'] = [10, 6]
 plt.rc('text', usetex=True)
 
 def get_colors(n_colors):
-    return plt.cm.twilight(np.linspace(0,1-1/n_colors,n_colors))
+    return plt.cm.twilight_shifted(np.linspace(0,1-1/n_colors,n_colors))
 
 # TODO sample multiple seq_id and plot
 def plot_3d(seq, xspec='x_orth', dims_to_plot=[0,1,2], output_file='output/plot_3d.pdf'):
@@ -26,11 +26,12 @@ def plot_3d(seq, xspec='x_orth', dims_to_plot=[0,1,2], output_file='output/plot_
     # ax.set_aspect('equal')
 
     # Get number of unique seq_id for coloring
-    list_seq_id = []
+    uniq_seq_id = set()
     for n in range(len(seq)):
         if hasattr(seq[0], 'seq_id'):
-            list_seq_id.append(seq[n].seq_id)
-    uniq_seq_id = set(list_seq_id)
+            uniq_seq_id.add(seq[n].seq_id)
+
+    list_seq_id = list(uniq_seq_id)
 
     # Select trials with different seq_id
     trial_ids_plot = []
@@ -57,18 +58,10 @@ def plot_3d(seq, xspec='x_orth', dims_to_plot=[0,1,2], output_file='output/plot_
         if len(uniq_seq_id)==0:
             ax.plot(x_1, x_2, x_3, color='green', marker='.', markersize=4)
         else:
-            # Color based on seq_id
-            # ax.plot(x_1, x_2, x_3, color=colors[min(seq[n].seq_id, len(colors)-1)], marker='.',\
-            #          markersize=4, label='Cond: '+str(seq[n].seq_id)+', Trial: '+str(seq[n].trial_id))
-
-            # ax.plot(x_1, x_2, x_3, color=colors[min(seq[n].seq_id, len(colors)-1)], alpha=0.6, marker='.',\
-            #          markersize=4, label='Cond: '+str(cond_label[min(seq[n].seq_id, len(cond_label)-1)])+', Trial: '+str(seq[n].trial_id))
-            if seq[n].seq_id==2:
-                ax.plot(x_1, x_2, x_3, color=colors[min(seq[n].seq_id, len(colors)-1)], alpha=0.6, marker='.',\
-                         markersize=4, label='Cond: '+str(cond_label[min(seq[n].seq_id, len(cond_label)-1)])+', Trial: '+str(seq[n].trial_id))
-            else:
-                ax.plot(x_1, x_2, x_3, color='green', alpha=0.6, marker='.',\
-                         markersize=4, label='Cond: Not Air, Trial: '+str(seq[n].trial_id))
+            N = len(x_1) or len(x_2) or len(x_3)
+            plot_colors = plt.cm.get_cmap('gist_rainbow', N)
+            for i in range(N-1):
+                ax.plot(x_1[i:i+2], x_2[i:i+2], x_3[i:i+2], color=plot_colors(i), alpha=1.0, marker='.', markersize=4)
 
     if len(uniq_seq_id)>0:
         # Remove duplicate labels
@@ -85,9 +78,6 @@ def plot_3d(seq, xspec='x_orth', dims_to_plot=[0,1,2], output_file='output/plot_
         # Source: https://stackoverflow.com/questions/4700614/how-to-put-the-legend-out-of-the-plot
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-
-        # ax.legend()
 
     # Source: https://matplotlib.org/users/usetex.html
     if xspec=='x_orth':

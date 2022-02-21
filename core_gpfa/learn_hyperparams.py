@@ -2,7 +2,7 @@
 import numpy as np
 from core_gpfa.util import invToeplitz
 from scipy.optimize import minimize
-from core_gpfa.make_K_big import nn_kernel, Lee_metric, Tsum, Discrete_metric
+from core_gpfa.make_K_big import nn_kernel, Lee_metric, Tsum, Discrete_metric, circular_kernel, logit_kernel
 
 
 def learn_GP_params(seq, current_params):
@@ -23,6 +23,8 @@ def learn_GP_params(seq, current_params):
         fname = grad_rq
     elif current_params.cov_type == 'pw':
         fname = grad_pw
+    elif current_params.cov_type == 'im':
+        fname = grad_im
     elif current_params.cov_type == 'p':
         fname = grad_p
     elif current_params.cov_type == 'lp':
@@ -35,8 +37,10 @@ def learn_GP_params(seq, current_params):
         fname = grad_poly
     elif current_params.cov_type == 'nn':
         fname = grad_nn
-    elif current_params.cov_type == 'im':
-        fname = grad_im
+    elif current_params.cov_type == 'circ':
+        fname = grad_circ
+    elif current_params.cov_type == 'logit':
+        fname = grad_logit
 
     precomp = makePrecomp(seq, xDim, distance=current_params.distance)
 
@@ -52,11 +56,7 @@ def learn_GP_params(seq, current_params):
             'PautoSUM': precomp['PautoSUM'][i],
             'distance': current_params.distance
         }
-        if current_params.cov_type == 'rbf' or current_params.cov_type == 'rq' \
-                or current_params.cov_type == 'pw' or current_params.cov_type == 'p' \
-                or current_params.cov_type == 'cos' or current_params.cov_type == 'lin' \
-                or current_params.cov_type == 'poly' or current_params.cov_type == 'lp' \
-                or current_params.cov_type == 'nn' or current_params.cov_type == 'im':
+        if current_params.cov_type != 'sm':
 
             const = current_params.eps[i]
             res = minimize(fun=fname,
@@ -194,7 +194,7 @@ def grad_pw(p, curr_args, const):
     if curr_args['distance'] == 'Root Manhattan':
         temp = (1-const) * (np.sinc(0.5 * np.exp(p) * np.sqrt(np.abs(curr_args['Tdif']))) + np.eye(Tmax))
     elif curr_args['distance'] == 'Lee':
-        temp = (1-const) * (np.sinc(0.5 * np.exp(p) * Lee_metric(Tmax)) + 0.5 * np.eye(Tmax))
+        temp = (1-const) * (np.sinc(0.5 * np.exp(p) * Lee_metric(Tmax)) + 5 * np.eye(Tmax))
     elif curr_args['distance'] == 'Canberra':
         temp = (1-const) * (np.sinc(2 * (np.abs(curr_args['Tdif']))/Tsum(Tmax)) + 0.1 * np.eye(Tmax))
     elif curr_args['distance'] == 'Discrete':
@@ -339,6 +339,40 @@ def grad_nn(p, curr_args, const):
     Tall = curr_args['Tall']
     Tmax = np.max(Tall)
     temp = (1-const) * np.array([[nn_kernel(i,j) for j in range(1,Tmax+1)] for i in range(1,Tmax+1)])
+    Kmax = temp + const * np.identity(Tmax)
+
+    T = curr_args['T'][0]
+    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
+
+    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
+          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
+
+    return f
+
+
+def grad_circ(p, curr_args, const):
+    # Cost function for circular kernel
+
+    Tall = curr_args['Tall']
+    Tmax = np.max(Tall)
+    temp = (1-const) * (circular_kernel(Tmax) + np.eye(Tmax))
+    Kmax = temp + const * np.identity(Tmax)
+
+    T = curr_args['T'][0]
+    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
+
+    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
+          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
+
+    return f
+
+
+def grad_logit(p, curr_args, const):
+    # Cost function for circular kernel
+
+    Tall = curr_args['Tall']
+    Tmax = np.max(Tall)
+    temp = (1-const) * (logit_kernel(Tmax) + np.eye(Tmax))
     Kmax = temp + const * np.identity(Tmax)
 
     T = curr_args['T'][0]

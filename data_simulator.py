@@ -65,8 +65,7 @@ def sample_data(kernel, params, num_trials, trial_length):
             v = params.gamma[i][params.Q*2:params.Q*3]
             Km = np.zeros(diffSq.shape)
             for j in range(len(w)):
-                Km = Km + w[j] * np.exp(-2 * np.pi**2 * v[j] **
-                                        2 * diffSq) * np.cos(2 * np.pi * Tdif.T * m[j])
+                Km = Km + w[j] * np.exp(-2 * np.pi**2 * v[j] ** 2 * diffSq) * np.cos(2 * np.pi * Tdif.T * m[j])
             K.append(Km)
 
     # sampling once
@@ -94,8 +93,7 @@ def generate_trial_data(params, K, xDim, T):
         X[i, :] = np.random.multivariate_normal(np.zeros(T), K[i])
     Y = np.zeros((params.C.shape[0], T))
     for i in range(T):
-        Y[:, i] = np.random.multivariate_normal(
-            np.matmul(params.C, X[:, i]) + params.d, params.R)
+        Y[:, i] = np.random.multivariate_normal(np.matmul(params.C, X[:, i]) + params.d, params.R)
     return Y
 
 
@@ -105,10 +103,8 @@ def save_data(filepath, sample_data, params):
     # save X,Y to mat file
     save = {'seq': [[]]}
     for i in range(len(sample_data)):
-        save['seq'][0].append([[[sample_data[i].trial_id]], [[sample_data[i].T]], [
-                              [sample_data[i].seq_id]], sample_data[i].x, sample_data[i].y])
-    save['currentParams'] = [[[[params.cov_type], [params.gamma], [
-        params.eps], params.d[:, np.newaxis], params.C, params.R]]]
+        save['seq'][0].append([[[sample_data[i].trial_id]], [[sample_data[i].T]], [[sample_data[i].seq_id]], sample_data[i].x, sample_data[i].y])
+    save['currentParams'] = [[[[params.cov_type], [params.gamma], [params.eps], params.d[:, np.newaxis], params.C, params.R]]]
     # save['extra_opts'] = [['kernSDList']],[[30]]]
     scipy.io.savemat(filepath, save, do_compression=True)
     print("Saved file at", filepath)
@@ -123,18 +119,17 @@ def save_params(filepath, params):
 
 
 # Load from file
-def load_data(filepath):
-    model_data = Model_Specs()
-    model_data.data_from_mat(filepath)
+def load_data(filepath, bin_width=1):
+    model_data = Model_Specs(bin_width=bin_width)
+    model_data.from_mat(filepath)
     data = model_data.get_data()
     return data
 
 
 # Load from dataset
-def load_real_world_data(filepath, movie=False, natural_or_gratings=False, shifted_natural=False):
-    model_data = Model_Specs()
-    if movie:
-        model_data.data_from_movie(filepath)
+def load_real_world_data(filepath, bin_width=20, movie=False, natural_or_gratings=False, shifted=False, stimulus_index=0, shift_index=0, image_index=0):
+    model_data = Model_Specs(bin_width=bin_width)
+    model_data.from_dataset(filepath, movie, natural_or_gratings, shifted, stimulus_index=stimulus_index, shift_index=shift_index, image_index=image_index)
     data = model_data.get_data()
     return data
 
@@ -153,5 +148,4 @@ if __name__ == "__main__":
     sampled_data, saved_params = sample_data(cov_type, params, 56, 20)
     print('Shape of x is ', sampled_data[0].x.shape)
     print('Shape of y is ', sampled_data[0].y.shape)
-    save_data('input/fake_data_{}.mat'.format(cov_type),
-              sampled_data, saved_params)
+    save_data('input/fake_data_{}.mat'.format(cov_type), sampled_data, saved_params)

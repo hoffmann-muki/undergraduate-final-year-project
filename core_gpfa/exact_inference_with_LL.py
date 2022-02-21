@@ -12,6 +12,9 @@ def exact_inference_with_LL(seq, params, getLL = False):
 
     # Precomputations
     if params.RforceDiagonal:
+        if np.linalg.det(params.R) == 0:
+            for i in np.argwhere(params.R==0):
+                params.R[i] = 0.01
         R_inv = np.diag(1./np.diag(params.R))
         logdet_R = np.sum(np.log(np.diag(params.R)))
     else:
@@ -25,12 +28,11 @@ def exact_inference_with_LL(seq, params, getLL = False):
     T_all = [s.T for s in seq]
     Tu   = np.unique(T_all)
     LL   = 0.0
-
+    
     # Process: 1. for each unique trial length, 2. select trials with that length, 
     # 3. perform inference and log-likelihood computation
     for j in range(len(Tu)):
         T = Tu[j]
-
         K_big, K_big_inv, logdet_K_big = make_K_big(params, T)
 
         K_big = sparse.csr_matrix(K_big) # TODO check other sparse formats
