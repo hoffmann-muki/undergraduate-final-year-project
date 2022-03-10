@@ -20,14 +20,14 @@ if __name__ == '__main__':
     method = 'gpfa'
     param_Q = 2  # number of mixtures for SM
     param_distance = ''
-    param_cov_type = input('Choose a kernel:\nrbf\trq\tpw\tim\tsm\tp\tlp\tcos\tlin\tpoly\tnn\tcirc\tlogit\n>>> ').strip() or 'rbf'
+    param_cov_type = input('Choose a kernel:\nrbf\tpw\tim\ttri\tsm\tp\tlin\tpoly\tnn\n>>> ').strip() or 'rbf'
     if param_cov_type == 'rbf':
-        param_distance = input('Choose a metric:\nEuclidean\tRoot Manhattan\t\tLee\tCanberra\tDiscrete\tEuclidean -- varying timescales\n>>> ').strip() or 'Euclidean'
-    elif param_cov_type == 'rq' or param_cov_type == 'pw' or param_cov_type == 'im':
+        param_distance = input('Choose a metric:\nEuclidean\tRoot Manhattan\t\tLee\tCanberra\tDiscrete\n>>> ').strip() or 'Euclidean'
+    elif param_cov_type == 'pw' or param_cov_type == 'im':
         param_distance = input('Choose a metric:\nEuclidean\tRoot Manhattan\t\tLee\tCanberra\tDiscrete\n>>> ').strip() or 'Euclidean'
     elif param_cov_type == 'p':
         param_distance = input('Choose a metric:\nEuclidean\tLee\tDiscrete\n>>> ').strip() or 'Euclidean'
-    elif param_cov_type == 'sm' or param_cov_type == 'lp' or param_cov_type == 'cos':
+    elif param_cov_type == 'sm' or param_cov_type == 'lp' or param_cov_type == 'cos' or param_cov_type == 'tri':
         param_distance = 'Euclidean'
     # x_dim = 8 for latent dimension of 'rbf' on synthetic data
     # x_dim = 2 for latent dimension of 'sm' on synthetic data

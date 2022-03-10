@@ -48,14 +48,14 @@ def gpfa_engine(seq_train, seq_test, fname, x_dim, bin_width, param_cov_type='rb
     param_distance = param_distance
 
     # Fit model parameters
-    if not (param_cov_type == 'lin' or param_cov_type == 'poly' or param_cov_type == 'nn' or param_cov_type == 'circ' or param_cov_type == 'logit'):
+    if not (param_cov_type == 'lin' or param_cov_type == 'poly' or param_cov_type == 'nn'):
         print('\nFitting GPFA model with %s kernel, using %s distance\n' % (param_cov_type, param_distance))
     else:
         print('\nFitting GPFA model with %s kernel\n' % param_cov_type)
     
-    if param_cov_type == 'rbf' or param_cov_type == 'rq' or param_cov_type == 'pw' \
+    if param_cov_type == 'rbf' or param_cov_type == 'pw' or param_cov_type == 'tri' \
     or param_cov_type == 'im' or param_cov_type == 'lin' or param_cov_type == 'poly' \
-    or param_cov_type == 'nn' or param_cov_type == 'circ' or param_cov_type == 'logit':
+    or param_cov_type == 'nn':
 
         if param_cov_type == 'rbf':
             if param_distance == 'Root Manhattan':
@@ -63,18 +63,7 @@ def gpfa_engine(seq_train, seq_test, fname, x_dim, bin_width, param_cov_type='rb
             elif param_distance == 'Lee' or param_distance == 'Canberra' or param_distance == 'Discrete':
                 param_gamma = np.zeros((x_dim,)) # not used
             else:
-                if param_distance == 'Euclidean -- varying timescales':
-                    param_gamma = 0.01 * (1/np.arange(x_dim, 0, -1)**2)
-                else:
-                    param_gamma = np.ones((x_dim,)) # Euclidean / Manhattan
-
-        elif param_cov_type == 'rq':
-            if param_distance == 'Root Manhattan':
-                param_gamma = 0.001 * np.ones((x_dim,)) # gamma used to guarantee positive definiteness
-            elif param_distance == 'Lee' or param_distance == 'Canberra' or param_distance == 'Discrete':
-                param_gamma = np.zeros((x_dim,)) # not used
-            else: 
-                param_gamma = (bin_width**2) * np.ones((x_dim,)) # Euclidean / Manhattan
+                param_gamma = bin_width**2 * np.ones((x_dim,)) # Euclidean / Manhattan
 
         elif param_cov_type == 'pw':
             if param_distance == 'Root Manhattan':
@@ -92,30 +81,23 @@ def gpfa_engine(seq_train, seq_test, fname, x_dim, bin_width, param_cov_type='rb
             elif param_distance == 'Lee' or param_distance == 'Canberra' or param_distance == 'Discrete':
                 param_gamma = np.zeros((x_dim,)) # not used
             else:
-                param_gamma = (bin_width**2) * np.ones((x_dim,)) # Euclidean / Manhattan
+                param_gamma = bin_width**2 * np.ones((x_dim,)) # Euclidean / Manhattan
         
-        elif param_cov_type == 'lin' or param_cov_type == 'poly':
+        elif param_cov_type == 'lin' or param_cov_type == 'poly' or param_cov_type == 'tri':
             param_gamma = np.zeros((x_dim,)) # not used
-        
-        else:
-            param_gamma = np.zeros((x_dim,)) # default value
         
         current_params = Param_Class(param_cov_type, param_gamma, param_eps, param_d, param_C, param_R, param_notes_learnKernelParams, param_notes_learnGPNoise, param_notes_RforceDiagonal, param_distance=param_distance)
 
         (est_params, seq_train, LLcut, iter_time) = em(current_params, seq_train, min_var_frac)
         (seq_train, LLtrain) = exact_inference_with_LL(seq_train, est_params, getLL=True)
 
-    elif param_cov_type == 'p' or param_cov_type == 'cos' or param_cov_type == 'lp':
+    elif param_cov_type == 'p':
 
         param_p = bin_width  # period of function
         param_lp = 0.5  # lengthscale of periodic function
         param_gamma = (2 * np.pi/param_p) * bin_width * np.ones((x_dim,)) # only used in hyperparameter learning
 
-        if param_cov_type == 'lp':
-            param_gamma2 = (bin_width / start_tau)**2 * np.ones((x_dim,))
-            current_params = Param_Class(param_cov_type, param_gamma, param_eps, param_d, param_C, param_R, param_notes_learnKernelParams, param_notes_learnGPNoise, param_notes_RforceDiagonal, param_p=param_p, param_lp=param_lp, param_gamma2=param_gamma2, param_distance=param_distance)
-        else:
-            current_params = Param_Class(param_cov_type, param_gamma, param_eps, param_d, param_C, param_R, param_notes_learnKernelParams, param_notes_learnGPNoise, param_notes_RforceDiagonal, param_p=param_p, param_lp=param_lp, param_distance=param_distance)
+        current_params = Param_Class(param_cov_type, param_gamma, param_eps, param_d, param_C, param_R, param_notes_learnKernelParams, param_notes_learnGPNoise, param_notes_RforceDiagonal, param_p=param_p, param_lp=param_lp, param_distance=param_distance)
         
         (est_params, seq_train, LLcut, iter_time) = em(current_params, seq_train, min_var_frac)
         (seq_train, LLtrain) = exact_inference_with_LL(seq_train, est_params, getLL=True)

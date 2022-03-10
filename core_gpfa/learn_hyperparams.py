@@ -2,7 +2,7 @@
 import numpy as np
 from core_gpfa.util import invToeplitz
 from scipy.optimize import minimize
-from core_gpfa.make_K_big import nn_kernel, Lee_metric, Tsum, Discrete_metric, circular_kernel, logit_kernel
+from core_gpfa.make_K_big import nn_kernel, triangular_kernel, Lee_metric, Tsum, Discrete_metric
 
 
 def learn_GP_params(seq, current_params):
@@ -19,28 +19,21 @@ def learn_GP_params(seq, current_params):
         fname = grad_rbf
     elif current_params.cov_type == 'sm':
         fname = grad_sm
-    elif current_params.cov_type == 'rq':
-        fname = grad_rq
     elif current_params.cov_type == 'pw':
         fname = grad_pw
+    elif current_params.cov_type == 'tri':
+        fname = grad_tri
     elif current_params.cov_type == 'im':
         fname = grad_im
     elif current_params.cov_type == 'p':
         fname = grad_p
-    elif current_params.cov_type == 'lp':
-        fname = grad_lp
-    elif current_params.cov_type == 'cos':
-        fname = grad_cos
     elif current_params.cov_type == 'lin':
         fname = grad_lin
     elif current_params.cov_type == 'poly':
         fname = grad_poly
     elif current_params.cov_type == 'nn':
         fname = grad_nn
-    elif current_params.cov_type == 'circ':
-        fname = grad_circ
-    elif current_params.cov_type == 'logit':
-        fname = grad_logit
+
 
     precomp = makePrecomp(seq, xDim, distance=current_params.distance)
 
@@ -160,32 +153,6 @@ def grad_rbf(p, curr_args, const):
     return f
 
 
-def grad_rq(p, curr_args, const):
-    # Cost function for rational quadratic kernel
-
-    Tall = curr_args['Tall']
-    Tmax = np.max(Tall)
-    if curr_args['distance'] == 'Root Manhattan':
-        temp = (1-const) * ((1 - (np.exp(p) * np.abs(curr_args['Tdif']))/(np.exp(p) * np.abs(curr_args['Tdif']) + 1)) + np.eye(Tmax))
-    elif curr_args['distance'] == 'Lee':
-        temp = (1-const) * (1 - (Lee_metric(Tmax)**2)/(Lee_metric(Tmax)**2 + 1))
-    elif curr_args['distance'] == 'Canberra':
-        temp = (1-const) * (1 - ((np.abs(curr_args['Tdif'])/Tsum(Tmax))**2)/((np.abs(curr_args['Tdif'])/Tsum(Tmax))**2 + 1))
-    elif curr_args['distance'] == 'Discrete':
-        temp = (1-const) * (1 - (Discrete_metric(Tmax)**2)/(Discrete_metric(Tmax)**2 + 1))
-    else:
-        temp = (1-const) * (1 - (np.exp(p) * curr_args['difSq'])/(np.exp(p) * curr_args['difSq'] + 1))
-    Kmax = temp + const * np.identity(Tmax)
-
-    T = curr_args['T'][0]
-    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
-
-    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
-          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
-
-    return f
-
-
 def grad_pw(p, curr_args, const):
     # Cost function for Paley-Weiner kernel
 
@@ -201,6 +168,23 @@ def grad_pw(p, curr_args, const):
         temp = (1-const) * np.sinc(2 * Discrete_metric(Tmax)**2)
     else:
         temp = (1-const) * np.sinc(0.5 * np.exp(p) * np.abs(curr_args['Tdif']))
+    Kmax = temp + const * np.identity(Tmax)
+
+    T = curr_args['T'][0]
+    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
+
+    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
+          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
+
+    return f
+
+
+def grad_tri(p, curr_args, const):
+    # Cost function for triangular kernel
+
+    Tall = curr_args['Tall']
+    Tmax = np.max(Tall)
+    temp = (1-const) * (np.array([[triangular_kernel(i,j) for j in range(1,Tmax+1)] for i in range(1,Tmax+1)]) + np.eye(Tmax))
     Kmax = temp + const * np.identity(Tmax)
 
     T = curr_args['T'][0]
@@ -260,42 +244,6 @@ def grad_p(p, curr_args, const):
     return f
 
 
-def grad_lp(p, curr_args, const):
-    # Cost function for locally periodic kernel
-
-    Tall = curr_args['Tall']
-    Tmax = np.max(Tall)
-    temp = (1-const) \
-    * (np.exp(np.cos(np.exp(p) * np.abs(curr_args['Tdif']))) + 5 * np.eye(Tmax)) \
-    * np.exp(-0.5 * curr_args['difSq'])
-    Kmax = temp + const * np.identity(Tmax)
-
-    T = curr_args['T'][0]
-    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
-
-    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
-          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
-
-    return f
-
-
-def grad_cos(p, curr_args, const):
-    # Cost function for cosine kernel
-
-    Tall = curr_args['Tall']
-    Tmax = np.max(Tall)
-    temp = (1-const) * (np.cos(np.exp(p) * np.abs(curr_args['Tdif'])) + np.eye(Tmax))
-    Kmax = temp + const * np.identity(Tmax)
-
-    T = curr_args['T'][0]
-    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
-
-    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
-          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
-
-    return f
-
-
 def grad_lin(p, curr_args, const):
     # Cost function for linear kernel
 
@@ -313,6 +261,7 @@ def grad_lin(p, curr_args, const):
           np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
 
     return f
+
 
 def grad_poly(p, curr_args, const):
     # Cost function for polynomial kernel
@@ -339,40 +288,6 @@ def grad_nn(p, curr_args, const):
     Tall = curr_args['Tall']
     Tmax = np.max(Tall)
     temp = (1-const) * np.array([[nn_kernel(i,j) for j in range(1,Tmax+1)] for i in range(1,Tmax+1)])
-    Kmax = temp + const * np.identity(Tmax)
-
-    T = curr_args['T'][0]
-    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
-
-    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
-          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
-
-    return f
-
-
-def grad_circ(p, curr_args, const):
-    # Cost function for circular kernel
-
-    Tall = curr_args['Tall']
-    Tmax = np.max(Tall)
-    temp = (1-const) * (circular_kernel(Tmax) + np.eye(Tmax))
-    Kmax = temp + const * np.identity(Tmax)
-
-    T = curr_args['T'][0]
-    Kinv, logdet_K = invToeplitz(Kmax[0:T, 0:T])
-
-    f = -(- 0.5 * curr_args['numTrials'] * logdet_K - 0.5 *
-          np.dot(curr_args['PautoSUM'].flatten(), Kinv.flatten()))
-
-    return f
-
-
-def grad_logit(p, curr_args, const):
-    # Cost function for circular kernel
-
-    Tall = curr_args['Tall']
-    Tmax = np.max(Tall)
-    temp = (1-const) * (logit_kernel(Tmax) + np.eye(Tmax))
     Kmax = temp + const * np.identity(Tmax)
 
     T = curr_args['T'][0]

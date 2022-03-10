@@ -129,13 +129,12 @@ class Param_Class():
     def __init__(self, param_cov_type=None, param_gamma=None,
                  param_eps=None, param_d=None, param_C=None, param_R=None,
                  param_notes_learnKernelParams=True, param_notes_learnGPNoise=False,
-                 param_notes_RforceDiagonal=True, param_q=3, param_p=0, param_lp=0, param_gamma2=0, param_distance='default'):
+                 param_notes_RforceDiagonal=True, param_q=3, param_p=0, param_lp=0, param_distance='default'):
         self.cov_type = param_cov_type
         self.gamma = param_gamma
         self.distance = param_distance
         self.p = param_p
         self.lp = param_lp
-        self.gamma2 = param_gamma2
         self.eps = param_eps
         self.d = param_d
         self.C = param_C

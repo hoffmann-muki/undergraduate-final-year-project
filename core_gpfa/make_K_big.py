@@ -2,9 +2,15 @@
 from core_gpfa.util import invToeplitz
 import numpy as np
 
+
 sigma0 = 0.25
 sigma = 0.25
 cov = np.diag([sigma0**2, sigma**2])
+
+
+def triangular_kernel(x, y):
+    return max(0, 0.5*(1-np.abs(x-y)))
+
 
 def nn_kernel(x, y):
     X = np.array([1, x])
@@ -12,14 +18,6 @@ def nn_kernel(x, y):
     num = 2 * np.dot(np.dot(X.T, cov), Y) # matrix multiplication is associative
     denom = np.sqrt((1 + 2 * np.dot(np.dot(X.T, cov), X)) * (1 + 2 * np.dot(np.dot(Y.T, cov), Y)))
     return (2/np.pi) * np.arcsin(num/denom)
-
-
-def circular_kernel(T):
-    return np.array([[np.sqrt(1-(i/T)**2) * np.sqrt(1-(j/T)**2) for j in range(1,T+1)] for i in range(1,T+1)])
-
-
-def logit_kernel(T):
-    return np.array([[np.log(i/(T+2)/(1-i/(T+2))) * np.log(j/(T+2)/(1-j/(T+2))) for j in range(1,T+1)] for i in range(1,T+1)])
 
 
 def Lee_metric(T):
@@ -72,29 +70,7 @@ def make_K_big(params, T):
                 K = (1 - params.eps[i]) \
                     * np.exp(-0.5 * params.gamma[i] * diffSq) \
                     + params.eps[i] * np.eye(T)
-            
-        elif params.cov_type == 'rq':
-            if params.distance == 'Root Manhattan':
-                K = (1 - params.eps[i]) \
-                    * ((1 - (params.gamma[i] * np.abs(Tdif))/(params.gamma[i] * np.abs(Tdif) + 1)) + np.eye(T)) \
-                    + params.eps[i] * np.eye(T)
-            elif params.distance == 'Lee':
-                K = (1 - params.eps[i]) \
-                    * (1 - (Lee_metric(T)**2)/(Lee_metric(T)**2 + 1)) \
-                    + params.eps[i] * np.eye(T)
-            elif params.distance == 'Canberra':
-                K = (1 - params.eps[i]) \
-                    * (1 - ((np.abs(Tdif)/Tsum(T))**2)/((np.abs(Tdif)/Tsum(T))**2 + 1)) \
-                    + params.eps[i] * np.eye(T)                
-            elif params.distance == 'Discrete':
-                K = (1 - params.eps[i]) \
-                    * (1 - (Discrete_metric(T)**2)/(Discrete_metric(T)**2 + 1)) \
-                    + params.eps[i] * np.eye(T)
-            else: # Euclidean / Manhattan
-                K = (1 - params.eps[i]) \
-                    * (1 - (params.gamma[i] * diffSq)/(params.gamma[i] * diffSq + 1)) \
-                    + params.eps[i] * np.eye(T)
-
+        
         elif params.cov_type == 'pw':
             if params.distance == 'Root Manhattan':
                 K = ((1 - params.eps[i]) * np.sinc(0.5 * params.gamma[i] * np.sqrt(np.abs(Tdif))) + np.eye(T)) \
@@ -126,6 +102,12 @@ def make_K_big(params, T):
             else: # Manhattan / Euclidean
                 K = (1 - params.eps[i]) * (1/np.sqrt(params.gamma[i] * diffSq + 1)) + params.eps[i] * np.eye(T)
         
+        elif params.cov_type == 'tri':
+
+            K = (1 - params.eps[i]) \
+            * (np.array([[triangular_kernel(i,j) for j in range(1,T+1)] for i in range(1,T+1)]) + np.eye(T)) \
+            + params.eps[i] * np.eye(T)
+
         elif params.cov_type == 'p':
             if params.distance == 'Lee':
                 top_Kp = np.exp(np.cos(Lee_metric(T))) - np.i0(1/params.lp**2)
@@ -143,21 +125,6 @@ def make_K_big(params, T):
                 K = (1 - params.eps[i]) * (top_Kp/bottom_Kp + 5 * np.eye(T)) \
                     + params.eps[i] * np.eye(T)
         
-        elif params.cov_type == 'lp':
-        
-            top_Kp = np.exp(np.cos(np.abs(Tdif))) - np.i0(1/params.lp**2)
-            bottom_Kp = np.exp(1/params.lp**2) - np.i0(1/params.lp**2)
-            Kp = top_Kp/bottom_Kp + 5 * np.eye(T)
-            Kg = np.exp(-params.gamma2[i] / 2 * diffSq)
-            K = (1 - params.eps[i]) * (Kp * Kg) \
-                + params.eps[i] * np.eye(T)      
-
-        elif params.cov_type == 'cos':
-
-            K = (1 - params.eps[i]) \
-                * (np.cos((2*np.pi/params.p) * params.gamma[i] * np.abs(Tdif)) + np.eye(T)) \
-                + params.eps[i] * np.eye(T)
-
         elif params.cov_type == 'lin':
 
             # normalised linear kernel
@@ -177,16 +144,6 @@ def make_K_big(params, T):
             K = (1 - params.eps[i]) \
             * np.array([[nn_kernel(i,j) for j in range(1,T+1)] for i in range(1,T+1)]) \
             + params.eps[i] * np.eye(T)
-
-        elif params.cov_type == 'circ':
-        
-            K = (1-params.eps[i]) \
-            * (circular_kernel(T) + np.eye(T)) + params.eps[i] * np.eye(T)
-        
-        elif params.cov_type == 'logit':
-        
-            K = (1-params.eps[i]) \
-            * (logit_kernel(T) + np.eye(T)) + params.eps[i] * np.eye(T)
 
         elif params.cov_type == 'sm':
             w = params.gamma[i][:params.Q]

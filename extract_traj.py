@@ -125,32 +125,38 @@ def extract_traj(output_dir, bin_width, data, method='gpfa', x_dim=3, param_cov_
     for cvf in range(num_folds+1):
         if num_folds==0:
             print("\nTraining on all data...\n")
-        else:
-            print("\nCross-validation fold %d of %d\n" % (cvf, num_folds))
-        
-        test_mask = np.zeros(N, dtype=bool)
-        if cvf > 0:
-            test_mask[np.arange(f_div[cvf-1],f_div[cvf], dtype=int)] = True
-        train_mask = ~test_mask
-
-        if num_folds == 0:
-            # Keep original order if using all data as training set
+            train_mask = np.ones(N, dtype=bool)
             tr = np.arange(0, N)
+            train_trial_idx = tr[train_mask]
+            seq_train = [data[trial_num] for trial_num in train_trial_idx]
+            seq_test = []
+            if len(seq_train)==0:
+                print("No examples in training set. Exiting from current cross-validation run")
+                continue
         else:
-            tr = np.random.RandomState(seed=42).permutation(N) # deterministic permutation
+            if cvf == 0:
+                continue
+            else:
+                print("\nCross-validation fold %d of %d\n" % (cvf, num_folds))
+            
+                test_mask = np.zeros(N, dtype=bool)
+                test_mask[np.arange(f_div[cvf-1],f_div[cvf], dtype=int)] = True
+                train_mask = ~test_mask
+                
+                tr = np.random.RandomState(seed=42).permutation(N) # deterministic permutation
+                
+                train_trial_idx = tr[train_mask]
+                test_trial_idx  = tr[test_mask]
+                seq_train = [data[trial_num] for trial_num in train_trial_idx]
+                seq_test = [data[trial_num] for trial_num in test_trial_idx]
 
-        train_trial_idx = tr[train_mask]
-        test_trial_idx  = tr[test_mask]
-        seq_train = [data[trial_num] for trial_num in train_trial_idx] # CHECK if copy.deepcopy() required
-        seq_test = [data[trial_num] for trial_num in test_trial_idx]
+                print('\nNumber of trials in training: %d\n' % len(seq_train));
+                print('\nNumber of trials in testing: %d\n' % len(seq_test));
+                print('\nDimensionality of latent space: %d\n' % x_dim);
 
-        print('\nNumber of trials in training: %d\n' % len(seq_train));
-        print('\nNumber of trials in testing: %d\n' % len(seq_test));
-        print('\nDimensionality of latent space: %d\n' % x_dim);
-
-        if len(seq_train)==0:
-            print("No examples in training set. Exiting from current cross-validation run")
-            continue
+                if len(seq_train)==0:
+                    print("No examples in training set. Exiting from current cross-validation run")
+                    continue
 
         # If doing cross-validation, don't use private noise variance floor
         # TODO, set minVarFrac and pass to gpfa_engine
@@ -221,6 +227,6 @@ def extract_traj(output_dir, bin_width, data, method='gpfa', x_dim=3, param_cov_
 
                     sse += np.sum((ym.ravel() - ym_pred.A1)**2) # add prediction error for neuron m
                     
-            print(sse)
+            print('leave-one-neuron-out prediction error:', sse)
     # Returns result of the last run fold
     return result
