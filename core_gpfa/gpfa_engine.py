@@ -53,9 +53,7 @@ def gpfa_engine(seq_train, seq_test, fname, x_dim, bin_width, param_cov_type='rb
     else:
         print('\nFitting GPFA model with %s kernel\n' % param_cov_type)
     
-    if param_cov_type == 'rbf' or param_cov_type == 'pw' or param_cov_type == 'tri' \
-    or param_cov_type == 'im' or param_cov_type == 'lin' or param_cov_type == 'poly' \
-    or param_cov_type == 'nn':
+    if param_cov_type != 'sm':
 
         if param_cov_type == 'rbf':
             if param_distance == 'Root Manhattan':
@@ -83,7 +81,7 @@ def gpfa_engine(seq_train, seq_test, fname, x_dim, bin_width, param_cov_type='rb
             else:
                 param_gamma = bin_width**2 * np.ones((x_dim,)) # Euclidean / Manhattan
         
-        elif param_cov_type == 'lin' or param_cov_type == 'poly' or param_cov_type == 'tri':
+        else:
             param_gamma = np.zeros((x_dim,)) # not used
         
         current_params = Param_Class(param_cov_type, param_gamma, param_eps, param_d, param_C, param_R, param_notes_learnKernelParams, param_notes_learnGPNoise, param_notes_RforceDiagonal, param_distance=param_distance)
@@ -143,7 +141,6 @@ def gpfa_engine(seq_train, seq_test, fname, x_dim, bin_width, param_cov_type='rb
                         # Initialize with mean
                         current_params.gamma[d] = np.mean(
                             init_gamma, axis=0).tolist()
-                print("Initial hyper parameters\n", current_params.gamma)
 
                 # Attempt EM and inference
                 (est_params, seq_train, LLcut, iter_time) = em(current_params, seq_train, min_var_frac)

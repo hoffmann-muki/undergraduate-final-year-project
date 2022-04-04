@@ -110,19 +110,25 @@ def make_K_big(params, T):
 
         elif params.cov_type == 'p':
             if params.distance == 'Lee':
+                if params.lp < pow(10, -5):
+                    params.lp = 0.5
                 top_Kp = np.exp(np.cos(Lee_metric(T))) - np.i0(1/params.lp**2)
                 bottom_Kp = np.exp(1/params.lp**2) - np.i0(1/params.lp**2)
-                K = (1 - params.eps[i]) * (top_Kp/bottom_Kp + 5 * np.eye(T)) \
+                K = (1 - params.eps[i]) * (top_Kp/bottom_Kp + 10 * np.eye(T)) \
                     + params.eps[i] * np.eye(T)
             elif params.distance == 'Discrete':
+                if params.lp < pow(10, -5):
+                    params.lp = 0.5
                 top_Kp = np.exp(np.cos(Discrete_metric(T))) - np.i0(1/params.lp**2)
                 bottom_Kp = np.exp(1/params.lp**2) - np.i0(1/params.lp**2)
-                K = (1 - params.eps[i]) * (top_Kp/bottom_Kp + 5 * np.eye(T)) \
+                K = (1 - params.eps[i]) * (top_Kp/bottom_Kp + 10 * np.eye(T)) \
                     + params.eps[i] * np.eye(T)
             else: # Manhattan / Euclidean
+                if params.lp < pow(10, -5):
+                    params.lp = 0.5
                 top_Kp = np.exp(np.cos(np.abs(Tdif))) - np.i0(1/params.lp**2)
                 bottom_Kp = np.exp(1/params.lp**2) - np.i0(1/params.lp**2)
-                K = (1 - params.eps[i]) * (top_Kp/bottom_Kp + 5 * np.eye(T)) \
+                K = (1 - params.eps[i]) * (top_Kp/bottom_Kp + 10 * np.eye(T)) \
                     + params.eps[i] * np.eye(T)
         
         elif params.cov_type == 'lin':

@@ -228,11 +228,11 @@ def grad_p(p, curr_args, const):
     Tall = curr_args['Tall']
     Tmax = np.max(Tall)
     if curr_args['distance'] == 'Lee':
-        temp = (1-const) * (np.exp(np.cos(np.exp(p) * Lee_metric(Tmax))) + 5 * np.eye(Tmax))
+        temp = (1-const) * (np.exp(np.cos(np.exp(p) * Lee_metric(Tmax))) + 10 * np.eye(Tmax))
     elif curr_args['distance'] == 'Discrete':
-        temp = (1-const) * (np.exp(np.cos(np.exp(p) * Discrete_metric(Tmax))) + 5 * np.eye(Tmax))
+        temp = (1-const) * (np.exp(np.cos(np.exp(p) * Discrete_metric(Tmax))) + 10 * np.eye(Tmax))
     else:    
-        temp = (1-const) * (np.exp(np.cos(np.exp(p) * np.abs(curr_args['Tdif']))) + 5 * np.eye(Tmax))
+        temp = (1-const) * (np.exp(np.cos(np.exp(p) * np.abs(curr_args['Tdif']))) + 10 * np.eye(Tmax))
     Kmax = temp + const * np.identity(Tmax)
 
     T = curr_args['T'][0]

@@ -11,7 +11,7 @@ from core_gpfa.plot_3d import plot_3d, plot_1d, plot_1d_error
 import matplotlib.pyplot as plt
 
 
-RUN_ID = 1
+RUN_ID = 0 # 0 for experiments, 1 for testing 
 OUTPUT_DIR = './output/'+str(RUN_ID)+'/'
 
 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         INPUT_FILE = './input/fake_data_{}.mat'.format('sm')
         data = load_data(INPUT_FILE, bin_width=1) # for synthetic data
     else:
-        filename = input('Choose the dataset file:\nMovie1Exp1.mat\tMovie1Exp2.mat\tMovie2Exp1\tMovie2Exp2.mat\tNaturalImages1.mat\tNaturalImages2.mat\tShifts1.mat\tShifts2.mat\tGratings.mat\n>>> ').strip()
+        filename = input('Choose the dataset file:\nMovie1Exp1.mat\tMovie1Exp2.mat\tMovie2Exp1.mat\tMovie2Exp2.mat\tNaturalImages1.mat\tNaturalImages2.mat\tShifts1.mat\tShifts2.mat\tGratings.mat\n>>> ').strip()
         dataset_format = int(input('Choose the dataset format:\n1 for Movie\t2 for Natural Images OR Gratings\t3 for Shifted Natural Images\n>>> ').strip())
         if dataset_format == 1:
             data = load_real_world_data('dataset/' + filename, bin_width=bin_width, movie=True)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # Orthonormalize trajectories
     # Returns results for the last run cross-validation fold, if enabled
     (est_params, seq_train, seq_test) = postprocess(result['params'], result['seq_train'], result['seq_test'], method)
-
+    
     print("LL for training: %.3f, for testing: %.3f, method: %s, x_dim:%d, param_cov_type:%s, param_Q:%d"
         % (result['LLtrain'], result['LLtest'], method, x_dim, param_cov_type, param_Q))
 
