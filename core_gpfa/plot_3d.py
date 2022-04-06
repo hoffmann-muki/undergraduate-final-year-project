@@ -160,8 +160,12 @@ def plot_1d(seq, xspec='x_orth', bin_width=20, output_file='output/plot_1d.pdf')
 
         ax.set_yticks(ytk)
         ax.set_yticklabels(ytk)
-        
-        ax.set_xlabel('Time')
+
+        ax.set_ylabel('State', fontsize=11)
+        ax.set_xlabel('Time[ms]', fontsize=11)
+    
+    for axis in fig.get_axes():
+        axis.label_outer()
     
     plt.tight_layout()
     plt.savefig(output_file+'_plot_1d.pdf', transparent=True)
