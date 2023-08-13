@@ -1,7 +1,7 @@
 ### py-gpfa
 
 This is a python port of the MATLAB code for Gaussian Process Factor Analysis (GPFA) that was made
-available by Yu et al. at [GPFA_MATLAB_CODE](http://users.ece.cmu.edu/~byronyu/software/gpfa0203.tgz)
+available by Yu et al. at [GPFA_MATLAB_CODE](http://users.ece.cmu.edu/~byronyu/software.shtml)
 
 ### To run
 > ``python example.py``
